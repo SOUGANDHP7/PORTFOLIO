@@ -46,12 +46,15 @@ html, body {
     z-index: 10;
     visibility: hidden;
     opacity: 0;
-    transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1), transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    /* GPU-accelerated transition — only animating opacity+transform */
+    transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: opacity, transform;
+    contain: layout style;
 }
 .page.active {
     visibility: visible;
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) translateZ(0);
 }
 .page.hidden {
     opacity: 0;
@@ -59,10 +62,10 @@ html, body {
     pointer-events: none;
 }
 .page.slide-up {
-    transform: translateY(-50px);
+    transform: translateY(-40px) translateZ(0);
 }
 .page.slide-left {
-    transform: translateX(-50px);
+    transform: translateX(-40px) translateZ(0);
 }
 
 .scrollable {
@@ -71,6 +74,9 @@ html, body {
     scroll-behavior: smooth;
     -ms-overflow-style: none;
     scrollbar-width: none;
+    /* Isolate paint to this layer — prevents parent repaints on scroll */
+    contain: paint;
+    -webkit-overflow-scrolling: touch; /* smooth momentum scroll on iOS */
 }
 .scrollable::-webkit-scrollbar { display: none; }
 .non-scrollable {
@@ -80,19 +86,21 @@ html, body {
     align-items: center;
 }
 
-/* Background Layers */
+/* Background Layers — GPU-promoted with translateZ */
 .aurora-bg {
     position: fixed;
     top: -50%;
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle at 50% 50%, rgba(255,42,109,0.15), transparent 60%),
-                radial-gradient(circle at 20% 30%, rgba(148,0,211,0.1), transparent 50%);
-    filter: blur(100px);
+    /* Baked gradient — no filter blur (too expensive). Visual feel preserved. */
+    background: radial-gradient(circle at 50% 50%, rgba(255,42,109,0.12), transparent 60%),
+                radial-gradient(circle at 20% 30%, rgba(148,0,211,0.08), transparent 50%);
     z-index: 1;
-    animation: aurora-drift 20s infinite alternate linear;
+    animation: aurora-drift 25s infinite alternate linear;
     pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
 }
 .stars {
     position: fixed;
@@ -101,9 +109,11 @@ html, body {
     width: 100vw;
     height: 100vh;
     background: transparent url('data:image/svg+xml;utf8,<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="1.5" fill="rgba(255,255,255,0.8)"/><circle cx="80" cy="120" r="2" fill="rgba(255,255,255,0.6)"/><circle cx="140" cy="60" r="1" fill="rgba(255,255,255,0.9)"/></svg>') repeat;
-    animation: stars-drift 150s linear infinite;
+    animation: stars-drift 200s linear infinite;
     z-index: 2;
     pointer-events: none;
+    transform: translateZ(0);
+    will-change: background-position;
 }
 .clouds {
     position: fixed;
@@ -111,11 +121,12 @@ html, body {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: radial-gradient(circle at 20% 80%, rgba(255, 94, 142, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(148, 0, 211, 0.05) 0%, transparent 50%);
-    animation: clouds-drift 30s ease-in-out infinite alternate;
+    background: radial-gradient(circle at 20% 80%, rgba(255, 94, 142, 0.04) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(148, 0, 211, 0.04) 0%, transparent 50%);
+    animation: clouds-drift 40s ease-in-out infinite alternate;
     z-index: 2;
     pointer-events: none;
+    transform: translateZ(0);
 }
 #particles-canvas {
     position: fixed;
@@ -125,19 +136,21 @@ html, body {
     height: 100vh;
     pointer-events: none;
     z-index: 3;
+    transform: translateZ(0);
 }
 
-/* Glass Card */
+/* Glass Card — reduced blur for performance */
 .glass-card {
     background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--glass-border);
     border-radius: 24px;
-    box-shadow: 0 8px 32px 0 var(--glass-shadow);
+    box-shadow: 0 8px 24px 0 var(--glass-shadow);
+    transform: translateZ(0);
 }
 
-/* Buttons */
+/* Buttons — instant response, GPU hover */
 .glow-button {
     background: transparent;
     color: var(--text-primary);
@@ -149,10 +162,15 @@ html, body {
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    transition: all 0.4s ease;
-    box-shadow: 0 0 15px rgba(255, 94, 142, 0.3);
+    /* Only transition color/bg — no layout props */
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+    box-shadow: 0 0 12px rgba(255, 94, 142, 0.25);
     z-index: 20;
     margin: 5px;
+    touch-action: manipulation; /* Removes 300ms tap delay on mobile */
+    -webkit-tap-highlight-color: transparent;
+    transform: translateZ(0);
+    will-change: transform;
 }
 .glow-button.outline {
     border: 2px solid rgba(255, 255, 255, 0.5);
@@ -161,8 +179,12 @@ html, body {
 .glow-button:hover {
     background: var(--accent-primary);
     border-color: var(--accent-primary);
-    box-shadow: 0 0 30px rgba(255, 94, 142, 0.6);
-    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(255, 94, 142, 0.5);
+    transform: scale(1.04) translateZ(0);
+}
+.glow-button:active {
+    transform: scale(0.97) translateZ(0);
+    transition-duration: 0.08s;
 }
 .big-btn {
     padding: 20px 50px;
@@ -195,19 +217,28 @@ html, body {
     height: 50px;
     border-radius: 50%;
     background: var(--glass-bg);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--glass-border);
     color: var(--text-primary);
     font-size: 1.5rem;
     cursor: pointer;
     z-index: 100;
-    transition: all 0.3s ease;
+    transition: transform 0.2s ease, opacity 0.2s ease;
     display: flex;
     justify-content: center;
     align-items: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transform: translateZ(0);
 }
 .music-toggle.playing {
-    animation: pulse 2s infinite;
+    /* Lightweight pulse using opacity only — no box-shadow animation */
+    animation: music-pulse 2.5s ease-in-out infinite;
+}
+@keyframes music-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
 }
 
 /* Modals */
@@ -344,13 +375,47 @@ html, body {
     border-radius: 20px;
     overflow: hidden;
     padding: 10px;
-    box-shadow: 0 0 30px rgba(255, 94, 142, 0.2);
+    box-shadow: 0 0 30px rgba(255, 94, 142, 0.3),
+                0 0 60px rgba(255, 94, 142, 0.1),
+                inset 0 0 30px rgba(255, 94, 142, 0.05);
+    border: 1px solid rgba(255, 94, 142, 0.3);
+    position: relative;
 }
 .video-wrapper video {
     width: 100%;
+    height: auto;
+    max-height: 60vh;
     border-radius: 12px;
     outline: none;
+    display: block;
+    object-fit: contain;
+    background: #000;
 }
+.video-loading-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(8,6,12,0.8);
+    border-radius: 20px;
+    z-index: 5;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+}
+.video-loading-overlay.loaded {
+    opacity: 0;
+    pointer-events: none;
+}
+.video-spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(255,94,142,0.2);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 .video-caption {
     padding: 20px;
     text-align: center;
@@ -374,23 +439,50 @@ html, body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: transform 0.4s ease, box-shadow 0.4s ease;
+    transition: transform 0.3s ease;
     opacity: 0; /* GSAP */
+    will-change: transform, opacity;
+    transform: translateZ(0);
 }
 .memory-card:hover {
-    transform: translateY(-10px) !important;
-    box-shadow: 0 15px 40px rgba(255, 94, 142, 0.2);
+    transform: translateY(-8px) translateZ(0) !important;
+    box-shadow: 0 12px 32px rgba(255, 94, 142, 0.25);
 }
 .img-container {
     width: 100%;
     height: 220px;
     overflow: hidden;
+    position: relative;
+    background: rgba(8,6,12,0.8);
+}
+.img-container::before {
+    content: '🤍';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    opacity: 0.3;
+    z-index: 0;
+    pointer-events: none;
 }
 .img-container img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.6s ease;
+    object-position: center;
+    transition: transform 0.6s ease, opacity 0.4s ease;
+    opacity: 0;
+    position: relative;
+    z-index: 1;
+    display: block;
+}
+.img-container img.loaded {
+    opacity: 1;
+}
+.img-container img.error {
+    opacity: 0.3;
+    filter: grayscale(1);
 }
 .memory-card:hover .img-container img { transform: scale(1.1); }
 .memory-text { padding: 20px; text-align: left; }
@@ -468,9 +560,9 @@ html, body {
     width: 100%;
     min-height: 150px;
 }
-/* Heart Catch */
-#catch-area { position: relative; width: 100%; height: 150px; overflow: hidden; border: 1px solid var(--glass-border); border-radius: 10px; cursor: crosshair; }
-.falling-heart { position: absolute; font-size: 1.5rem; user-select: none; transition: top 0.1s linear; }
+/* Heart Catch — use transform for GPU-accelerated movement */
+#catch-area { position: relative; width: 100%; height: 150px; overflow: hidden; border: 1px solid var(--glass-border); border-radius: 10px; cursor: crosshair; touch-action: manipulation; }
+.falling-heart { position: absolute; font-size: 1.5rem; user-select: none; will-change: transform; transform: translateY(0) translateZ(0); }
 /* Quiz */
 .quiz-options { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 15px; }
 .quiz-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: white; padding: 10px; border-radius: 8px; cursor: pointer; transition: background 0.3s; }
@@ -478,13 +570,13 @@ html, body {
 .quiz-btn.correct { background: #4CAF50; border-color: #4CAF50; }
 .quiz-btn.wrong { background: #F44336; border-color: #F44336; }
 /* Wheel */
-.wheel { width: 100px; height: 100px; border-radius: 50%; border: 4px solid var(--accent-primary); display: flex; justify-content: center; align-items: center; transition: transform 3s cubic-bezier(0.25, 0.1, 0.25, 1); box-shadow: 0 0 15px var(--accent-primary); }
+.wheel { width: 100px; height: 100px; border-radius: 50%; border: 4px solid var(--accent-primary); display: flex; justify-content: center; align-items: center; transition: transform 3s cubic-bezier(0.25, 0.1, 0.25, 1); box-shadow: 0 0 10px rgba(255,94,142,0.5); will-change: transform; transform: translateZ(0); }
 .wheel-inner { font-size: 2rem; transform: rotate(0deg); }
 /* Match */
 .match-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
-.match-card { width: 100%; aspect-ratio: 1; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 2rem; cursor: pointer; transition: transform 0.3s; }
-.match-card.flipped { background: rgba(255, 94, 142, 0.2); transform: rotateY(180deg); }
-.match-card span { opacity: 0; transition: opacity 0.3s; }
+.match-card { width: 100%; aspect-ratio: 1; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 2rem; cursor: pointer; transition: transform 0.25s ease; touch-action: manipulation; -webkit-tap-highlight-color: transparent; will-change: transform; transform: translateZ(0); }
+.match-card.flipped { background: rgba(255, 94, 142, 0.2); transform: rotateY(180deg) translateZ(0); }
+.match-card span { opacity: 0; transition: opacity 0.25s; }
 .match-card.flipped span { opacity: 1; }
 /* Meter */
 .meter-bar { width: 100%; height: 30px; background: rgba(0,0,0,0.5); border-radius: 15px; overflow: hidden; border: 1px solid var(--glass-border); }
@@ -505,34 +597,36 @@ html, body {
 .garden-title { font-family: 'Playfair Display', serif; font-size: 4rem; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.8); position: absolute; top: 15%; width: 100%; text-align: center; z-index: 20; }
 .garden-subtitle { font-size: 1.2rem; color: rgba(255,255,255,0.7); position: absolute; top: 25%; width: 100%; text-align: center; z-index: 20; }
 .garden-interactables { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; }
-.magical-item { position: absolute; font-size: 2.5rem; cursor: pointer; transition: transform 0.3s, filter 0.3s; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
-.magical-item:hover { transform: scale(1.3); filter: drop-shadow(0 0 20px rgba(255,255,255,1)); }
-.magical-butterfly { animation: flutter 4s infinite alternate ease-in-out; }
-.magical-flower { animation: pulse 3s infinite; }
-.magical-star { animation: twinkle 2s infinite; }
+.magical-item { position: absolute; font-size: 2.5rem; cursor: pointer; transition: transform 0.25s ease; filter: drop-shadow(0 0 8px rgba(255,255,255,0.4)); touch-action: manipulation; -webkit-tap-highlight-color: transparent; will-change: transform; transform: translateZ(0); }
+.magical-item:hover { transform: scale(1.25) translateZ(0); filter: drop-shadow(0 0 14px rgba(255,255,255,0.8)); }
+.magical-butterfly { animation: flutter 5s infinite alternate ease-in-out; }
+.magical-flower { animation: flower-pulse 4s infinite; }
+.magical-star { animation: twinkle 3s infinite; }
 .garden-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 30px; font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--accent-primary); text-align: center; z-index: 40; min-width: 300px; }
 
 /* PAGE 5 ENDING */
 .ending-page { background: #000; }
 .lantern-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; overflow: hidden; }
-.lantern { position: absolute; bottom: -100px; width: 40px; height: 60px; background: rgba(255, 165, 0, 0.8); border-radius: 10px 10px 5px 5px; box-shadow: 0 0 20px rgba(255, 165, 0, 0.6), inset 0 -10px 20px rgba(255,69,0,0.8); animation: float-up linear forwards; }
+.lantern { position: absolute; bottom: -100px; width: 40px; height: 60px; background: rgba(255, 165, 0, 0.8); border-radius: 10px 10px 5px 5px; box-shadow: 0 0 15px rgba(255, 165, 0, 0.5); animation: float-up linear forwards; will-change: transform, opacity; transform: translateZ(0); }
 .final-scene { position: relative; z-index: 20; text-align: center; }
-.floating-heart-huge { font-size: 4rem; animation: bounce 3s infinite; margin-bottom: 30px; text-shadow: 0 0 40px rgba(255,94,142,0.8); }
-.final-title { font-family: 'Playfair Display', serif; font-size: 5rem; color: #fff; text-shadow: 0 0 30px rgba(255,255,255,0.8); margin-bottom: 20px; }
+.floating-heart-huge { font-size: 4rem; animation: bounce 3s infinite; margin-bottom: 30px; will-change: transform; }
+.final-title { font-family: 'Playfair Display', serif; font-size: 5rem; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.6); margin-bottom: 20px; }
 .final-subtitle { font-size: 1.5rem; color: rgba(255,255,255,0.8); }
-.fade-in-delay { opacity: 0; animation: fadeIn 2s 1s forwards; }
-.fade-in-delay-2 { opacity: 0; animation: fadeIn 2s 3s forwards; }
+.fade-in-delay { opacity: 0; animation: fadeIn 1.5s 0.5s forwards; }
+.fade-in-delay-2 { opacity: 0; animation: fadeIn 1.5s 1.5s forwards; }
 
-/* Animations */
-@keyframes aurora-drift { from { transform: rotate(0deg); } to { transform: rotate(5deg) scale(1.1); } }
-@keyframes stars-drift { from { background-position: 0 0; } to { background-position: -1000px 1000px; } }
-@keyframes clouds-drift { from { opacity: 0.5; transform: scale(1); } to { opacity: 1; transform: scale(1.1); } }
-@keyframes pulse-glow { 0%, 100% { text-shadow: 0 0 20px rgba(255, 94, 142, 0.5); transform: scale(1); } 50% { text-shadow: 0 0 40px rgba(255, 94, 142, 0.8), 0 0 60px rgba(255, 94, 142, 0.5); transform: scale(1.02); } }
-@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 94, 142, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(255, 94, 142, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 94, 142, 0); } }
-@keyframes flutter { 0% { transform: translate(0, 0) rotate(0deg); } 100% { transform: translate(20px, -20px) rotate(15deg); } }
-@keyframes twinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); } }
-@keyframes float-up { from { transform: translateY(0) rotate(0deg); opacity: 1; } to { transform: translateY(-120vh) rotate(20deg); opacity: 0; } }
+/* Animations — all use only transform/opacity (GPU-composited) */
+@keyframes aurora-drift { from { transform: rotate(0deg) translateZ(0); } to { transform: rotate(4deg) scale(1.08) translateZ(0); } }
+@keyframes stars-drift { from { background-position: 0 0; } to { background-position: -800px 800px; } }
+@keyframes clouds-drift { from { opacity: 0.6; transform: translateZ(0); } to { opacity: 1; transform: scale(1.05) translateZ(0); } }
+/* pulse-glow: only opacity animation, no text-shadow change (cheaper) */
+@keyframes pulse-glow { 0%, 100% { opacity: 1; transform: scale(1) translateZ(0); } 50% { opacity: 0.85; transform: scale(1.015) translateZ(0); } }
+@keyframes bounce { 0%, 100% { transform: translateY(0) translateZ(0); } 50% { transform: translateY(-12px) translateZ(0); } }
+/* flower-pulse: opacity only, no box-shadow */
+@keyframes flower-pulse { 0%, 100% { opacity: 1; transform: scale(1) translateZ(0); } 50% { opacity: 0.75; transform: scale(1.05) translateZ(0); } }
+@keyframes flutter { 0% { transform: translate(0, 0) rotate(0deg) translateZ(0); } 100% { transform: translate(15px, -15px) rotate(12deg) translateZ(0); } }
+@keyframes twinkle { 0%, 100% { opacity: 1; transform: scale(1) translateZ(0); } 50% { opacity: 0.3; transform: scale(0.85) translateZ(0); } }
+@keyframes float-up { from { transform: translateY(0) rotate(0deg) translateZ(0); opacity: 1; } to { transform: translateY(-110vh) rotate(18deg) translateZ(0); opacity: 0; } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* Mobile Responsiveness */
@@ -544,6 +638,23 @@ html, body {
     .hero-buttons { flex-direction: column; }
     .garden-title { font-size: 2.5rem; }
     .final-title { font-size: 3rem; }
+    .video-wrapper video { max-height: 40vh; }
+    .page-2-container { padding: 60px 15px 120px; }
+    /* Reduce backdrop blur on mobile for performance */
+    .glass-card { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    .modal { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    .music-toggle { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+@media (max-width: 480px) {
+    .video-wrapper video { max-height: 35vh; }
+    .img-container { height: 180px; }
+    /* Disable aurora animation on small phones */
+    .aurora-bg { animation: none; }
+    .clouds { animation: none; }
+}
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.15s !important; }
 }
 
 </style>
@@ -562,8 +673,9 @@ html, body {
     
     <!-- Music Controls -->
     <button id="music-toggle" class="music-toggle">🎵</button>
-    <audio id="bg-music" loop>
+    <audio id="bg-music" loop preload="none">
         <source src="assets/music/piano_melody.mp3" type="audio/mpeg">
+        <source src="assets/music/piano_melody.ogg" type="audio/ogg">
     </audio>
 
     <!-- Modal: Love Letter -->
@@ -602,8 +714,12 @@ html, body {
             <!-- Video Section -->
             <div class="video-section gs-reveal">
                 <div class="video-wrapper glass-card">
-                    <video id="anime-video" controls autoplay loop muted playsinline poster="assets/images/anime_poster.jpg">
-                        <source src="assets/video/gemini_generated_video_481A540E.MP4" type="video/mp4">
+                    <div class="video-loading-overlay" id="video-loader">
+                        <div class="video-spinner"></div>
+                    </div>
+                    <video id="anime-video" controls muted loop playsinline preload="metadata"
+                           style="width:100%;height:auto;max-height:60vh;display:block;border-radius:12px;background:#000;">
+                        <source src="assets/video/gemini_generated_video_481A540E.mp4" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                     <div class="video-caption">
@@ -614,12 +730,12 @@ html, body {
             </div>
 
             <h2 class="section-title fade-in-up mt-80">Our Memories</h2>
-            
             <!-- Compact Horizontal Memory Grid -->
             <div class="memory-grid">
                 <div class="glass-card memory-card gs-reveal">
                     <div class="img-container">
-                        <img src="assets/images/memory1.jpg" alt="The First Glance">
+                        <img src="assets/images/memory1.jpg" alt="The First Glance" loading="lazy"
+                             onload="this.classList.add('loaded')" onerror="this.classList.add('error');this.src='';this.alt='💕 Memory'">
                     </div>
                     <div class="memory-text">
                         <h3>The First Glance</h3>
@@ -628,7 +744,8 @@ html, body {
                 </div>
                 <div class="glass-card memory-card gs-reveal">
                     <div class="img-container">
-                        <img src="assets/images/memory2.jpg" alt="The First Promise">
+                        <img src="assets/images/memory2.jpg" alt="The First Promise" loading="lazy"
+                             onload="this.classList.add('loaded')" onerror="this.classList.add('error');this.src='';this.alt='💕 Memory'">
                     </div>
                     <div class="memory-text">
                         <h3>The First Promise</h3>
@@ -637,25 +754,28 @@ html, body {
                 </div>
                 <div class="glass-card memory-card gs-reveal">
                     <div class="img-container">
-                        <img src="assets/images/memory3.jpg" alt="You & Me">
+                        <img src="assets/images/memory3.jpg" alt="You &amp; Me" loading="lazy"
+                             onload="this.classList.add('loaded')" onerror="this.classList.add('error');this.src='';this.alt='💕 Memory'">
                     </div>
                     <div class="memory-text">
-                        <h3>You & Me</h3>
+                        <h3>You &amp; Me</h3>
                         <p>Not perfect, but perfect for each other.</p>
                     </div>
                 </div>
                 <div class="glass-card memory-card gs-reveal">
                     <div class="img-container">
-                        <img src="assets/images/memory4.jpg" alt="Every Little Thing">
+                        <img src="assets/images/memory4.jpg" alt="Every Little Thing" loading="lazy"
+                             onload="this.classList.add('loaded')" onerror="this.classList.add('error');this.src='';this.alt='💕 Memory'">
                     </div>
                     <div class="memory-text">
                         <h3>Every Little Thing</h3>
-                        <p>It’s the little things you do that make my heart full.</p>
+                        <p>It's the little things you do that make my heart full.</p>
                     </div>
                 </div>
                 <div class="glass-card memory-card gs-reveal">
                     <div class="img-container">
-                        <img src="assets/images/memory5.png" alt="Forever">
+                        <img src="assets/images/memory5.png" alt="Forever" loading="lazy"
+                             onload="this.classList.add('loaded')" onerror="this.classList.add('error');this.src='';this.alt='💕 Memory'">
                     </div>
                     <div class="memory-text">
                         <h3>Forever</h3>
@@ -664,7 +784,8 @@ html, body {
                 </div>
                 <div class="glass-card memory-card gs-reveal">
                     <div class="img-container">
-                        <img src="assets/images/memory6.jpg" alt="Soul Connection">
+                        <img src="assets/images/memory6.jpg" alt="Soul Connection" loading="lazy"
+                             onload="this.classList.add('loaded')" onerror="this.classList.add('error');this.src='';this.alt='💕 Memory'">
                     </div>
                     <div class="memory-text">
                         <h3>Soul Connection</h3>
@@ -797,6 +918,43 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 1. GSAP & Global Setup ---
     gsap.registerPlugin(ScrollTrigger);
 
+    // --- 1b. Video Setup ---
+    const animeVideo = document.getElementById('anime-video');
+    const videoLoader = document.getElementById('video-loader');
+
+    function hideVideoLoader() {
+        if (videoLoader) videoLoader.classList.add('loaded');
+    }
+
+    if (animeVideo) {
+        // Hide loader once video can play
+        animeVideo.addEventListener('canplay', hideVideoLoader);
+        animeVideo.addEventListener('loadeddata', hideVideoLoader);
+        // Attempt autoplay when video is ready
+        animeVideo.addEventListener('canplaythrough', () => {
+            hideVideoLoader();
+            animeVideo.play().catch(() => {
+                // Autoplay blocked — video will play on user interaction
+            });
+        });
+        // Handle video error
+        animeVideo.addEventListener('error', () => {
+            hideVideoLoader();
+            console.warn('Video failed to load. Check file path and format.');
+        });
+        // Force load
+        animeVideo.load();
+    }
+
+    // --- 1c. Image Lazy-load Fade-in ---
+    // Images with loading="lazy" will already have onload handlers in HTML
+    // Also handle already-cached images
+    document.querySelectorAll('.img-container img').forEach(img => {
+        if (img.complete && img.naturalWidth > 0) {
+            img.classList.add('loaded');
+        }
+    });
+
     // --- 2. Audio Logic ---
     const bgMusic = document.getElementById('bg-music');
     const musicBtn = document.getElementById('music-toggle');
@@ -806,13 +964,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isPlaying) {
             bgMusic.pause();
             musicBtn.classList.remove('playing');
+            musicBtn.textContent = '🎵';
         } else {
-            bgMusic.play().catch(e => console.log("Audio play failed:", e));
+            bgMusic.play().catch(e => {
+                console.log("Audio play failed (no music file):", e);
+                musicBtn.textContent = '🎵';
+            });
             musicBtn.classList.add('playing');
+            musicBtn.textContent = '🎶';
         }
         isPlaying = !isPlaying;
     }
     musicBtn.addEventListener('click', toggleMusic);
+    bgMusic.addEventListener('error', () => {
+        // Music file missing — silently disable music button
+        musicBtn.style.opacity = '0.5';
+        musicBtn.title = 'Music file not found';
+    });
 
     // --- 3. Love Letter Modal ---
     const letterBtn = document.getElementById('letter-btn');
@@ -836,21 +1004,32 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function transitionPage(from, to, animation = 'slide-up') {
-        pages[from].classList.add('hidden', animation);
-        pages[from].classList.remove('active');
-        
+        const fromPage = pages[from];
+        const toPage = pages[to];
+
+        // Pause video if leaving page2
+        if (from === 'page2' && animeVideo) animeVideo.pause();
+
+        fromPage.classList.add('hidden', animation);
+        fromPage.classList.remove('active');
+
+        // Reduced delay to match the faster 0.7s CSS transition
         setTimeout(() => {
-            pages[to].classList.remove('hidden');
-            pages[to].classList.add('active');
-            
+            toPage.classList.remove('hidden');
+            toPage.classList.add('active');
+
+            // Resume video when entering page2
+            if (to === 'page2' && animeVideo) {
+                animeVideo.play().catch(() => {});
+            }
             if (to === 'page2') {
                 ScrollTrigger.refresh();
-                gsap.fromTo(".fade-in-up", { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
+                gsap.fromTo(".fade-in-up", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power2.out" });
             }
             if (to === 'page5') {
                 initLanterns();
             }
-        }, 800);
+        }, 400);
     }
 
     document.getElementById('start-btn').addEventListener('click', () => {
@@ -873,15 +1052,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 5. Page 2 GSAP Scroll Animations ---
     gsap.utils.toArray('.gs-reveal').forEach(function(elem) {
-        gsap.fromTo(elem, 
-            { y: 50, opacity: 0 }, 
+        gsap.fromTo(elem,
+            { y: 40, opacity: 0 },
             {
-                y: 0, opacity: 1, duration: 1, ease: "power3.out",
+                y: 0, opacity: 1, duration: 0.8, ease: "power2.out",
                 scrollTrigger: {
                     trigger: elem,
-                    scroller: ".scrollable",
-                    start: "top 85%",
-                    toggleActions: "play none none reverse"
+                    scroller: "#page-2",
+                    start: "top 88%",
+                    toggleActions: "play none none none" // no reverse = less re-calculation
                 }
             }
         );
@@ -891,88 +1070,129 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('particles-canvas');
     const ctx = canvas.getContext('2d');
     let particles = [];
+    let animFrameId = null;
 
+    // Detect mobile for reduced particle count
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
+    const PARTICLE_COUNT = isMobile ? 15 : 30;
+
+    let resizeTimer;
     function resizeCanvas() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
     }
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(resizeCanvas, 200); // debounced
+    });
     resizeCanvas();
 
     class Particle {
-        constructor() {
+        constructor() { this.reset(true); }
+        reset(initial = false) {
             this.x = Math.random() * canvas.width;
-            this.y = Math.random() * canvas.height;
-            this.size = Math.random() * 2 + 0.5;
-            this.speedY = (Math.random() - 0.5) * 1;
-            this.speedX = (Math.random() - 0.5) * 1;
-            this.opacity = Math.random() * 0.5 + 0.2;
-            this.pulse = Math.random() * 0.02;
+            this.y = initial ? Math.random() * canvas.height : canvas.height + 10;
+            this.size = Math.random() * 1.5 + 0.5;
+            this.speedY = Math.random() * 0.5 + 0.2;
+            this.speedX = (Math.random() - 0.5) * 0.4;
+            this.opacity = Math.random() * 0.4 + 0.15;
+            this.pulse = Math.random() * 0.008 + 0.003;
         }
         update() {
             this.y -= this.speedY;
             this.x += this.speedX;
             this.opacity += this.pulse;
-            if(this.opacity > 0.8 || this.opacity < 0.1) this.pulse = -this.pulse;
-
-            if (this.y < -10) this.y = canvas.height + 10;
-            if (this.y > canvas.height + 10) this.y = -10;
+            if (this.opacity > 0.65 || this.opacity < 0.1) this.pulse = -this.pulse;
+            if (this.y < -10) this.reset();
             if (this.x < -10) this.x = canvas.width + 10;
             if (this.x > canvas.width + 10) this.x = -10;
         }
         draw() {
-            ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = "#ff5e8e";
+            // No shadowBlur — it's extremely expensive on canvas
+            ctx.globalAlpha = this.opacity;
+            ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
             ctx.fill();
         }
     }
-    for (let i = 0; i < 40; i++) particles.push(new Particle());
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
 
     function animateParticles() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.globalAlpha = 1;
         particles.forEach(p => { p.update(); p.draw(); });
-        requestAnimationFrame(animateParticles);
+        ctx.globalAlpha = 1;
+        animFrameId = requestAnimationFrame(animateParticles);
     }
     animateParticles();
+
+    // Pause particle loop when tab is hidden
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            cancelAnimationFrame(animFrameId);
+        } else {
+            animateParticles();
+        }
+    });
 
 
     // --- 7. GAMES LOGIC (Page 3) ---
 
-    // Game 1: Heart Catch
+    // Game 1: Heart Catch — rAF-based, uses transform (GPU) not top (layout)
     const catchArea = document.getElementById('catch-area');
     const catchScoreEl = document.getElementById('catch-score');
     let catchScore = 0;
-    
-    setInterval(() => {
+    const HEARTS = ['\uD83E\uDD0D','\uD83D\uDC96','\uD83D\uDC95','\uD83D\uDC98'];
+
+    function spawnHeart() {
         if (!pages.page3.classList.contains('active')) return;
         const heart = document.createElement('div');
         heart.classList.add('falling-heart');
-        heart.innerHTML = ['🤍','💖','💕','💘'][Math.floor(Math.random()*4)];
-        heart.style.left = Math.random() * 80 + '%';
-        heart.style.top = '-20px';
+        heart.textContent = HEARTS[Math.floor(Math.random() * HEARTS.length)];
+        heart.style.left = (Math.random() * 82) + '%';
+        const areaH = catchArea.offsetHeight;
+        let y = -30;
+        heart.style.transform = `translateY(${y}px) translateZ(0)`;
         catchArea.appendChild(heart);
 
-        let top = -20;
-        const fallInt = setInterval(() => {
-            top += 2;
-            heart.style.top = top + 'px';
-            if (top > catchArea.offsetHeight) {
-                clearInterval(fallInt);
-                if(heart.parentNode) heart.parentNode.removeChild(heart);
+        const speed = isMobile ? 1.5 : 2.2;
+        let alive = true;
+
+        function fall() {
+            if (!alive) return;
+            y += speed;
+            heart.style.transform = `translateY(${y}px) translateZ(0)`;
+            if (y > areaH + 10) {
+                alive = false;
+                heart.remove();
+                return;
             }
-        }, 50);
+            requestAnimationFrame(fall);
+        }
+        requestAnimationFrame(fall);
 
         heart.addEventListener('click', () => {
-            clearInterval(fallInt);
-            if(heart.parentNode) heart.parentNode.removeChild(heart);
+            alive = false;
+            heart.remove();
             catchScore++;
-            catchScoreEl.innerText = catchScore;
-            confetti({ particleCount: 15, spread: 30, origin: { y: 0.7, x: heart.offsetLeft/catchArea.offsetWidth }});
-        });
-    }, 1500);
+            catchScoreEl.textContent = catchScore;
+            confetti({ particleCount: 12, spread: 28, origin: { y: 0.7 }});
+        }, { once: true });
+
+        // Touch support
+        heart.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            alive = false;
+            heart.remove();
+            catchScore++;
+            catchScoreEl.textContent = catchScore;
+        }, { once: true, passive: false });
+    }
+
+    // Spawn interval: 1800ms desktop, 2200ms mobile
+    setInterval(spawnHeart, isMobile ? 2200 : 1800);
 
     // Game 2: Love Quiz
     const quizBtns = document.querySelectorAll('.quiz-btn');
@@ -1101,15 +1321,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function initLanterns() {
         const lanternContainer = document.getElementById('lanterns');
         lanternContainer.innerHTML = '';
-        
-        for (let i = 0; i < 20; i++) {
+        // Fewer lanterns on mobile to save GPU
+        const count = isMobile ? 8 : 14;
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < count; i++) {
             const lantern = document.createElement('div');
             lantern.classList.add('lantern');
-            lantern.style.left = Math.random() * 100 + 'vw';
-            lantern.style.animationDuration = Math.random() * 10 + 10 + 's';
-            lantern.style.animationDelay = Math.random() * 5 + 's';
-            lanternContainer.appendChild(lantern);
+            lantern.style.left = Math.random() * 95 + 'vw';
+            lantern.style.animationDuration = (Math.random() * 8 + 10) + 's';
+            lantern.style.animationDelay = (Math.random() * 4) + 's';
+            frag.appendChild(lantern);
         }
+        lanternContainer.appendChild(frag);
     }
 
     // --- 10. Restart Journey Logic ---
