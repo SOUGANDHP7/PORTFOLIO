@@ -787,6 +787,7 @@ html, body {
             <div class="floating-heart-huge">🤍</div>
             <h1 class="final-title fade-in-delay">Forever Begins Here</h1>
             <p class="final-subtitle fade-in-delay-2">Thank you for being my everything.</p>
+            <button class="glow-button big-btn fade-in-delay-2 mt-4" id="restart-btn" style="position: relative; z-index: 50;">Restart Journey ↺</button>
         </div>
     </div>
 
@@ -1109,6 +1110,19 @@ document.addEventListener('DOMContentLoaded', () => {
             lantern.style.animationDelay = Math.random() * 5 + 's';
             lanternContainer.appendChild(lantern);
         }
+    }
+
+    // --- 10. Restart Journey Logic ---
+    const restartBtn = document.getElementById('restart-btn');
+    if (restartBtn) {
+        restartBtn.addEventListener('click', () => {
+            // Fade out body for smooth transition, then reload
+            document.body.style.transition = "opacity 1s ease";
+            document.body.style.opacity = "0";
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        });
     }
 });
 
