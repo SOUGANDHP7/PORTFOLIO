@@ -2,33 +2,255 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>For You ❤️</title>
-    <link rel="stylesheet" href="./style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>For You 🤍</title>
+    <!-- Modern Elegant Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- GSAP for Smooth Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-    <div class="page-container">
-        <!-- Simulating the video with an animated cute illustration -->
-        <div class="image-container video-sim">
-            <img src="./cute_couple.png" alt="Cute Couple Animation">
+    <!-- Backgrounds (Persistent across pages) -->
+    <div class="aurora-bg"></div>
+    <div class="stars"></div>
+    <div class="clouds"></div>
+    <canvas id="particles-canvas"></canvas>
+    
+    <!-- Music Controls -->
+    <button id="music-toggle" class="music-toggle">🎵</button>
+    <audio id="bg-music" loop>
+        <source src="assets/music/romantic_song.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Modal: Love Letter -->
+    <div id="love-letter-modal" class="modal hidden">
+        <div class="modal-content glass-card">
+            <button id="close-modal" class="close-btn">&times;</button>
+            <h2 class="modal-title">My Love...</h2>
+            <div class="modal-body">
+                <p>Every single day with you feels like a dream I never want to wake up from.</p>
+                <p>You are my heart, my soul, and my entire universe.</p>
+                <p class="signature">Forever Yours 🤍</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 1: FULLSCREEN HERO -->
+    <div id="page-1" class="page active non-scrollable">
+        <div class="hero-content">
+            <p class="hero-top-text">A ROMANTIC DREAMCORE JOURNEY</p>
+            <h1 class="hero-title pulse-glow">ENTE PONNIN</h1>
+            <p class="hero-subtitle">Every moment with you is a cinematic masterpiece.</p>
+            
+            <div class="hero-buttons">
+                <button class="glow-button" id="start-btn">Start Journey</button>
+                <button class="glow-button outline" id="letter-btn">Open Love Letter</button>
+            </div>
+            
+            <div class="floating-heart-hero">🤍</div>
+        </div>
+    </div>
+
+    <!-- PAGE 2: SHORT CINEMATIC STORY PAGE (SCROLLABLE) -->
+    <div id="page-2" class="page hidden scrollable">
+        <div class="page-2-container">
+            
+            <!-- Video Section -->
+            <div class="video-section gs-reveal">
+                <div class="video-wrapper glass-card">
+                    <video id="anime-video" controls poster="assets/images/anime_poster.jpg">
+                        <source src="assets/video/anime_video.mp4" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div class="video-caption">
+                        <h3>Through Every Storm</h3>
+                        <p>We fight, we fix it, and we grow stronger...</p>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="section-title fade-in-up mt-80">Our Memories</h2>
+            
+            <!-- Compact Horizontal Memory Grid -->
+            <div class="memory-grid">
+                <div class="glass-card memory-card gs-reveal">
+                    <div class="img-container">
+                        <img src="assets/images/memory1.jpg" alt="The First Glance">
+                    </div>
+                    <div class="memory-text">
+                        <h3>The First Glance</h3>
+                        <p>The moment our eyes met, everything else faded away.</p>
+                    </div>
+                </div>
+                <div class="glass-card memory-card gs-reveal">
+                    <div class="img-container">
+                        <img src="assets/images/memory2.jpg" alt="The First Promise">
+                    </div>
+                    <div class="memory-text">
+                        <h3>The First Promise</h3>
+                        <p>When we promised to hold hands no matter what.</p>
+                    </div>
+                </div>
+                <div class="glass-card memory-card gs-reveal">
+                    <div class="img-container">
+                        <img src="assets/images/memory3.jpg" alt="You & Me">
+                    </div>
+                    <div class="memory-text">
+                        <h3>You & Me</h3>
+                        <p>Not perfect, but perfect for each other.</p>
+                    </div>
+                </div>
+                <div class="glass-card memory-card gs-reveal">
+                    <div class="img-container">
+                        <img src="assets/images/memory4.jpg" alt="Every Little Thing">
+                    </div>
+                    <div class="memory-text">
+                        <h3>Every Little Thing</h3>
+                        <p>It’s the little things you do that make my heart full.</p>
+                    </div>
+                </div>
+                <div class="glass-card memory-card gs-reveal">
+                    <div class="img-container">
+                        <img src="assets/images/memory5.png" alt="Forever">
+                    </div>
+                    <div class="memory-text">
+                        <h3>Forever</h3>
+                        <p>Building a future filled with endless love and laughter.</p>
+                    </div>
+                </div>
+                <div class="glass-card memory-card gs-reveal">
+                    <div class="img-container">
+                        <img src="assets/images/memory6.jpg" alt="Soul Connection">
+                    </div>
+                    <div class="memory-text">
+                        <h3>Soul Connection</h3>
+                        <p>Some souls understand each other upon meeting.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ending Cinematic Area -->
+            <div class="ending-section gs-reveal">
+                <div class="glowing-divider"></div>
+                <div class="floating-heart-icon">🤍</div>
+                
+                <h3 class="emotional-text">And our story only grows more beautiful from here...</h3>
+
+                <button class="glow-button big-btn mt-4" id="to-page-3-btn">Continue The Journey &rarr;</button>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- PAGE 3: INTERACTIVE LOVE GAMES (NON-SCROLLING) -->
+    <div id="page-3" class="page hidden non-scrollable">
+        <div class="games-container">
+            <h2 class="section-title text-center">Interactive Love Hub</h2>
+            
+            <div class="games-grid">
+                <!-- Game 1: Heart Catch -->
+                <div class="game-card glass-card" id="game-catch">
+                    <h3>Catch My Heart</h3>
+                    <div class="game-area" id="catch-area">
+                        <div class="score-display">Score: <span id="catch-score">0</span></div>
+                        <p class="game-hint">Click the falling hearts!</p>
+                    </div>
+                </div>
+
+                <!-- Game 2: Love Quiz -->
+                <div class="game-card glass-card" id="game-quiz">
+                    <h3>Love Quiz</h3>
+                    <div class="game-area" id="quiz-area">
+                        <p id="quiz-q">What is my favorite thing about you?</p>
+                        <div class="quiz-options">
+                            <button class="quiz-btn" data-correct="false">Your hair</button>
+                            <button class="quiz-btn" data-correct="true">Your smile</button>
+                            <button class="quiz-btn" data-correct="false">Your style</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Game 3: Spin Wheel -->
+                <div class="game-card glass-card" id="game-wheel">
+                    <h3>Spin The Wheel</h3>
+                    <div class="game-area wheel-area">
+                        <div class="wheel" id="love-wheel">
+                            <div class="wheel-inner">🤍</div>
+                        </div>
+                        <button class="glow-button small-btn mt-2" id="spin-btn">Spin!</button>
+                        <p id="wheel-result" class="mt-2"></p>
+                    </div>
+                </div>
+
+                <!-- Game 4: Love Match -->
+                <div class="game-card glass-card" id="game-match">
+                    <h3>Love Match</h3>
+                    <div class="game-area match-grid" id="match-area">
+                        <!-- Cards injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Game 5: Love Meter -->
+                <div class="game-card glass-card" id="game-meter">
+                    <h3>Love Meter</h3>
+                    <div class="game-area meter-area">
+                        <div class="meter-bar">
+                            <div class="meter-fill" id="meter-fill"></div>
+                        </div>
+                        <p class="mt-2"><span id="meter-text">0</span>%</p>
+                        <button class="glow-button small-btn mt-2" id="charge-btn">Click to Fill!</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottom-center-absolute">
+                <button class="glow-button big-btn" id="to-page-4-btn">Enter The Secret Love Garden &rarr;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 4: SECRET LOVE GARDEN (NON-SCROLLING) -->
+    <div id="page-4" class="page hidden non-scrollable garden-page">
+        <!-- Magical Garden Elements -->
+        <div class="garden-background"></div>
+        <div class="moonlight"></div>
+        
+        <div class="garden-interactables">
+            <div class="magical-item magical-flower" style="top: 30%; left: 20%;" data-msg="You make my world bloom.">🌸</div>
+            <div class="magical-item magical-flower" style="top: 60%; left: 80%;" data-msg="Beautiful, just like you.">🌺</div>
+            <div class="magical-item magical-butterfly" style="top: 20%; left: 70%;" data-msg="You give me butterflies.">🦋</div>
+            <div class="magical-item magical-star" style="top: 15%; left: 40%;" data-msg="You are my shining star.">✨</div>
+            <div class="magical-item magical-star" style="top: 75%; left: 30%;" data-msg="I love you to the moon and back.">✨</div>
+        </div>
+
+        <div id="garden-message" class="garden-message glass-card hidden"></div>
+
+        <h2 class="garden-title">The Secret Garden</h2>
+        <p class="garden-subtitle">Click the magic to reveal hidden messages.</p>
+
+        <div class="bottom-center-absolute">
+            <button class="glow-button big-btn" id="to-page-5-btn">Final Memory &rarr;</button>
+        </div>
+    </div>
+
+    <!-- PAGE 5: CINEMATIC ENDING (NON-SCROLLING) -->
+    <div id="page-5" class="page hidden non-scrollable ending-page">
+        <div class="lantern-container" id="lanterns">
+            <!-- Lanterns injected by JS -->
         </div>
         
-        <a href="./page2.html" class="btn delayed-btn">Click Me</a>
+        <div class="final-scene">
+            <div class="floating-heart-huge">🤍</div>
+            <h1 class="final-title fade-in-delay">Forever Begins Here</h1>
+            <p class="final-subtitle fade-in-delay-2">Thank you for being my everything.</p>
+        </div>
     </div>
-    
-    <div id="hearts-container"></div>
-    <script>
-        const heartsContainer = document.getElementById('hearts-container');
-        setInterval(() => {
-            const heart = document.createElement('div');
-            heart.classList.add('heart');
-            heart.innerHTML = '❤️';
-            heart.style.left = Math.random() * 100 + 'vw';
-            heart.style.animationDuration = (Math.random() * 3 + 2) + 's';
-            heartsContainer.appendChild(heart);
-            setTimeout(() => heart.remove(), 5000);
-        }, 300);
-    </script>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
 </body>
 </html>
