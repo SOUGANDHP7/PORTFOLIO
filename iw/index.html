@@ -556,7 +556,7 @@ html, body {
 .games-container {
     width: 100%;
     max-width: 1200px;
-    padding: 80px 20px 150px; /* Space for bottom button */
+    padding: 80px 20px 20px; /* Reduced bottom padding since button is no longer absolute */
     height: 100%;
     position: relative;
     z-index: 20;
@@ -915,10 +915,11 @@ html, body {
                         <button class="glow-button small-btn mt-2" id="charge-btn">Click to Fill!</button>
                     </div>
                 </div>
-            </div>
 
-            <div class="bottom-center-absolute">
-                <button class="glow-button big-btn" id="to-page-4-btn">Enter The Secret Love Garden &rarr;</button>
+                <!-- Next Page Button placed inside the scrollable grid at the end -->
+                <div style="grid-column: 1 / -1; display: flex; justify-content: center; margin-top: 20px; padding-bottom: 40px;">
+                    <button class="glow-button" id="to-page-4-btn">Enter The Secret Love Garden &rarr;</button>
+                </div>
             </div>
         </div>
     </div>
