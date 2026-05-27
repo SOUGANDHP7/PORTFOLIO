@@ -2,6 +2,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 1. GSAP & Global Setup ---
     gsap.registerPlugin(ScrollTrigger);
 
+    // Mouse Glow Parallax
+    const mouseGlow = document.getElementById('mouse-glow');
+    if (mouseGlow && !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+        mouseGlow.style.opacity = '1';
+        let xTo = gsap.quickTo(mouseGlow, "x", {duration: 0.6, ease: "power3"}),
+            yTo = gsap.quickTo(mouseGlow, "y", {duration: 0.6, ease: "power3"});
+        window.addEventListener("mousemove", (e) => {
+            xTo(e.clientX);
+            yTo(e.clientY);
+        });
+    }
+
     // --- 1b. Video Setup ---
     const animeVideo = document.getElementById('anime-video');
     const videoLoader = document.getElementById('video-loader');
@@ -158,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Detect mobile for reduced particle count
     const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
-    const PARTICLE_COUNT = isMobile ? 15 : 30;
+    const PARTICLE_COUNT = isMobile ? 25 : 70; // Restored dense dreamy particles
 
     let resizeTimer;
     function resizeCanvas() {
@@ -171,33 +183,53 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     resizeCanvas();
 
+    const SHAPES = ['circle', 'circle', 'circle', 'star', 'heart'];
     class Particle {
         constructor() { this.reset(true); }
         reset(initial = false) {
             this.x = Math.random() * canvas.width;
             this.y = initial ? Math.random() * canvas.height : canvas.height + 10;
-            this.size = Math.random() * 1.5 + 0.5;
-            this.speedY = Math.random() * 0.5 + 0.2;
-            this.speedX = (Math.random() - 0.5) * 0.4;
-            this.opacity = Math.random() * 0.4 + 0.15;
-            this.pulse = Math.random() * 0.008 + 0.003;
+            this.size = Math.random() * 2 + 0.5;
+            this.speedY = Math.random() * 0.8 + 0.2;
+            this.speedX = (Math.random() - 0.5) * 0.6;
+            this.opacity = Math.random() * 0.5 + 0.2;
+            this.pulse = Math.random() * 0.01 + 0.005;
+            this.shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+            // Petal simulation
+            this.rotation = Math.random() * 360;
+            this.rotationSpeed = (Math.random() - 0.5) * 2;
         }
         update() {
             this.y -= this.speedY;
             this.x += this.speedX;
             this.opacity += this.pulse;
-            if (this.opacity > 0.65 || this.opacity < 0.1) this.pulse = -this.pulse;
+            this.rotation += this.rotationSpeed;
+            if (this.opacity > 0.8 || this.opacity < 0.1) this.pulse = -this.pulse;
             if (this.y < -10) this.reset();
             if (this.x < -10) this.x = canvas.width + 10;
             if (this.x > canvas.width + 10) this.x = -10;
         }
         draw() {
-            // No shadowBlur — it's extremely expensive on canvas
             ctx.globalAlpha = this.opacity;
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.fillStyle = (this.shape === 'heart') ? '#ff5e8e' : '#ffffff';
+            
+            if (this.shape === 'circle') {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation * Math.PI / 180);
+                if (this.shape === 'star') {
+                    ctx.font = `${this.size * 3}px Arial`;
+                    ctx.fillText('✦', 0, 0);
+                } else if (this.shape === 'heart') {
+                    ctx.font = `${this.size * 3}px Arial`;
+                    ctx.fillText('🌸', 0, 0); // Sakura petal mix
+                }
+                ctx.restore();
+            }
         }
     }
 
@@ -386,6 +418,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- 8. Secret Garden Logic (Page 4) ---
+    const gardenPage = document.getElementById('page-4');
+    
+    // Inject magical fireflies
+    const fireflyCount = isMobile ? 15 : 35;
+    for(let i=0; i<fireflyCount; i++) {
+        let f = document.createElement('div');
+        f.style.position = 'absolute';
+        f.style.width = Math.random() * 3 + 2 + 'px';
+        f.style.height = f.style.width;
+        f.style.background = '#e2ff00';
+        f.style.borderRadius = '50%';
+        f.style.boxShadow = '0 0 10px #e2ff00';
+        f.style.top = Math.random() * 100 + '%';
+        f.style.left = Math.random() * 100 + '%';
+        f.style.animation = `flutter ${Math.random()*4 + 3}s infinite alternate ease-in-out, pulse-glow ${Math.random()*2+1}s infinite`;
+        f.style.zIndex = '5';
+        f.style.pointerEvents = 'none';
+        f.style.willChange = 'transform, opacity';
+        gardenPage.appendChild(f);
+    }
+
     const gardenItems = document.querySelectorAll('.magical-item');
     const gardenMsg = document.getElementById('garden-message');
     
@@ -405,8 +458,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function initLanterns() {
         const lanternContainer = document.getElementById('lanterns');
         lanternContainer.innerHTML = '';
-        // Fewer lanterns on mobile to save GPU
-        const count = isMobile ? 8 : 14;
+        // Fewer lanterns on mobile to save GPU, dense on desktop
+        const count = isMobile ? 10 : 25;
         const frag = document.createDocumentFragment();
         for (let i = 0; i < count; i++) {
             const lantern = document.createElement('div');
