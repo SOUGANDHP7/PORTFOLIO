@@ -2,6 +2,43 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 1. GSAP & Global Setup ---
     gsap.registerPlugin(ScrollTrigger);
 
+    // --- 1b. Video Setup ---
+    const animeVideo = document.getElementById('anime-video');
+    const videoLoader = document.getElementById('video-loader');
+
+    function hideVideoLoader() {
+        if (videoLoader) videoLoader.classList.add('loaded');
+    }
+
+    if (animeVideo) {
+        // Hide loader once video can play
+        animeVideo.addEventListener('canplay', hideVideoLoader);
+        animeVideo.addEventListener('loadeddata', hideVideoLoader);
+        // Attempt autoplay when video is ready
+        animeVideo.addEventListener('canplaythrough', () => {
+            hideVideoLoader();
+            animeVideo.play().catch(() => {
+                // Autoplay blocked — video will play on user interaction
+            });
+        });
+        // Handle video error
+        animeVideo.addEventListener('error', () => {
+            hideVideoLoader();
+            console.warn('Video failed to load. Check file path and format.');
+        });
+        // Force load
+        animeVideo.load();
+    }
+
+    // --- 1c. Image Lazy-load Fade-in ---
+    // Images with loading="lazy" will already have onload handlers in HTML
+    // Also handle already-cached images
+    document.querySelectorAll('.img-container img').forEach(img => {
+        if (img.complete && img.naturalWidth > 0) {
+            img.classList.add('loaded');
+        }
+    });
+
     // --- 2. Audio Logic ---
     const bgMusic = document.getElementById('bg-music');
     const musicBtn = document.getElementById('music-toggle');
@@ -11,13 +48,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isPlaying) {
             bgMusic.pause();
             musicBtn.classList.remove('playing');
+            musicBtn.textContent = '🎵';
         } else {
-            bgMusic.play().catch(e => console.log("Audio play failed:", e));
+            bgMusic.play().catch(e => {
+                console.log("Audio play failed (no music file):", e);
+                musicBtn.textContent = '🎵';
+            });
             musicBtn.classList.add('playing');
+            musicBtn.textContent = '🎶';
         }
         isPlaying = !isPlaying;
     }
     musicBtn.addEventListener('click', toggleMusic);
+    bgMusic.addEventListener('error', () => {
+        // Music file missing — silently disable music button
+        musicBtn.style.opacity = '0.5';
+        musicBtn.title = 'Music file not found';
+    });
 
     // --- 3. Love Letter Modal ---
     const letterBtn = document.getElementById('letter-btn');
@@ -41,21 +88,32 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function transitionPage(from, to, animation = 'slide-up') {
-        pages[from].classList.add('hidden', animation);
-        pages[from].classList.remove('active');
-        
+        const fromPage = pages[from];
+        const toPage = pages[to];
+
+        // Pause video if leaving page2
+        if (from === 'page2' && animeVideo) animeVideo.pause();
+
+        fromPage.classList.add('hidden', animation);
+        fromPage.classList.remove('active');
+
+        // Reduced delay to match the faster 0.7s CSS transition
         setTimeout(() => {
-            pages[to].classList.remove('hidden');
-            pages[to].classList.add('active');
-            
+            toPage.classList.remove('hidden');
+            toPage.classList.add('active');
+
+            // Resume video when entering page2
+            if (to === 'page2' && animeVideo) {
+                animeVideo.play().catch(() => {});
+            }
             if (to === 'page2') {
                 ScrollTrigger.refresh();
-                gsap.fromTo(".fade-in-up", { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
+                gsap.fromTo(".fade-in-up", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power2.out" });
             }
             if (to === 'page5') {
                 initLanterns();
             }
-        }, 800);
+        }, 400);
     }
 
     document.getElementById('start-btn').addEventListener('click', () => {
@@ -78,15 +136,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 5. Page 2 GSAP Scroll Animations ---
     gsap.utils.toArray('.gs-reveal').forEach(function(elem) {
-        gsap.fromTo(elem, 
-            { y: 50, opacity: 0 }, 
+        gsap.fromTo(elem,
+            { y: 40, opacity: 0 },
             {
-                y: 0, opacity: 1, duration: 1, ease: "power3.out",
+                y: 0, opacity: 1, duration: 0.8, ease: "power2.out",
                 scrollTrigger: {
                     trigger: elem,
-                    scroller: ".scrollable",
-                    start: "top 85%",
-                    toggleActions: "play none none reverse"
+                    scroller: "#page-2",
+                    start: "top 88%",
+                    toggleActions: "play none none none" // no reverse = less re-calculation
                 }
             }
         );
@@ -96,88 +154,129 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('particles-canvas');
     const ctx = canvas.getContext('2d');
     let particles = [];
+    let animFrameId = null;
 
+    // Detect mobile for reduced particle count
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
+    const PARTICLE_COUNT = isMobile ? 15 : 30;
+
+    let resizeTimer;
     function resizeCanvas() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
     }
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(resizeCanvas, 200); // debounced
+    });
     resizeCanvas();
 
     class Particle {
-        constructor() {
+        constructor() { this.reset(true); }
+        reset(initial = false) {
             this.x = Math.random() * canvas.width;
-            this.y = Math.random() * canvas.height;
-            this.size = Math.random() * 2 + 0.5;
-            this.speedY = (Math.random() - 0.5) * 1;
-            this.speedX = (Math.random() - 0.5) * 1;
-            this.opacity = Math.random() * 0.5 + 0.2;
-            this.pulse = Math.random() * 0.02;
+            this.y = initial ? Math.random() * canvas.height : canvas.height + 10;
+            this.size = Math.random() * 1.5 + 0.5;
+            this.speedY = Math.random() * 0.5 + 0.2;
+            this.speedX = (Math.random() - 0.5) * 0.4;
+            this.opacity = Math.random() * 0.4 + 0.15;
+            this.pulse = Math.random() * 0.008 + 0.003;
         }
         update() {
             this.y -= this.speedY;
             this.x += this.speedX;
             this.opacity += this.pulse;
-            if(this.opacity > 0.8 || this.opacity < 0.1) this.pulse = -this.pulse;
-
-            if (this.y < -10) this.y = canvas.height + 10;
-            if (this.y > canvas.height + 10) this.y = -10;
+            if (this.opacity > 0.65 || this.opacity < 0.1) this.pulse = -this.pulse;
+            if (this.y < -10) this.reset();
             if (this.x < -10) this.x = canvas.width + 10;
             if (this.x > canvas.width + 10) this.x = -10;
         }
         draw() {
-            ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = "#ff5e8e";
+            // No shadowBlur — it's extremely expensive on canvas
+            ctx.globalAlpha = this.opacity;
+            ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
             ctx.fill();
         }
     }
-    for (let i = 0; i < 40; i++) particles.push(new Particle());
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
 
     function animateParticles() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.globalAlpha = 1;
         particles.forEach(p => { p.update(); p.draw(); });
-        requestAnimationFrame(animateParticles);
+        ctx.globalAlpha = 1;
+        animFrameId = requestAnimationFrame(animateParticles);
     }
     animateParticles();
+
+    // Pause particle loop when tab is hidden
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            cancelAnimationFrame(animFrameId);
+        } else {
+            animateParticles();
+        }
+    });
 
 
     // --- 7. GAMES LOGIC (Page 3) ---
 
-    // Game 1: Heart Catch
+    // Game 1: Heart Catch — rAF-based, uses transform (GPU) not top (layout)
     const catchArea = document.getElementById('catch-area');
     const catchScoreEl = document.getElementById('catch-score');
     let catchScore = 0;
-    
-    setInterval(() => {
+    const HEARTS = ['\uD83E\uDD0D','\uD83D\uDC96','\uD83D\uDC95','\uD83D\uDC98'];
+
+    function spawnHeart() {
         if (!pages.page3.classList.contains('active')) return;
         const heart = document.createElement('div');
         heart.classList.add('falling-heart');
-        heart.innerHTML = ['🤍','💖','💕','💘'][Math.floor(Math.random()*4)];
-        heart.style.left = Math.random() * 80 + '%';
-        heart.style.top = '-20px';
+        heart.textContent = HEARTS[Math.floor(Math.random() * HEARTS.length)];
+        heart.style.left = (Math.random() * 82) + '%';
+        const areaH = catchArea.offsetHeight;
+        let y = -30;
+        heart.style.transform = `translateY(${y}px) translateZ(0)`;
         catchArea.appendChild(heart);
 
-        let top = -20;
-        const fallInt = setInterval(() => {
-            top += 2;
-            heart.style.top = top + 'px';
-            if (top > catchArea.offsetHeight) {
-                clearInterval(fallInt);
-                if(heart.parentNode) heart.parentNode.removeChild(heart);
+        const speed = isMobile ? 1.5 : 2.2;
+        let alive = true;
+
+        function fall() {
+            if (!alive) return;
+            y += speed;
+            heart.style.transform = `translateY(${y}px) translateZ(0)`;
+            if (y > areaH + 10) {
+                alive = false;
+                heart.remove();
+                return;
             }
-        }, 50);
+            requestAnimationFrame(fall);
+        }
+        requestAnimationFrame(fall);
 
         heart.addEventListener('click', () => {
-            clearInterval(fallInt);
-            if(heart.parentNode) heart.parentNode.removeChild(heart);
+            alive = false;
+            heart.remove();
             catchScore++;
-            catchScoreEl.innerText = catchScore;
-            confetti({ particleCount: 15, spread: 30, origin: { y: 0.7, x: heart.offsetLeft/catchArea.offsetWidth }});
-        });
-    }, 1500);
+            catchScoreEl.textContent = catchScore;
+            confetti({ particleCount: 12, spread: 28, origin: { y: 0.7 }});
+        }, { once: true });
+
+        // Touch support
+        heart.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            alive = false;
+            heart.remove();
+            catchScore++;
+            catchScoreEl.textContent = catchScore;
+        }, { once: true, passive: false });
+    }
+
+    // Spawn interval: 1800ms desktop, 2200ms mobile
+    setInterval(spawnHeart, isMobile ? 2200 : 1800);
 
     // Game 2: Love Quiz
     const quizBtns = document.querySelectorAll('.quiz-btn');
@@ -306,14 +405,30 @@ document.addEventListener('DOMContentLoaded', () => {
     function initLanterns() {
         const lanternContainer = document.getElementById('lanterns');
         lanternContainer.innerHTML = '';
-        
-        for (let i = 0; i < 20; i++) {
+        // Fewer lanterns on mobile to save GPU
+        const count = isMobile ? 8 : 14;
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < count; i++) {
             const lantern = document.createElement('div');
             lantern.classList.add('lantern');
-            lantern.style.left = Math.random() * 100 + 'vw';
-            lantern.style.animationDuration = Math.random() * 10 + 10 + 's';
-            lantern.style.animationDelay = Math.random() * 5 + 's';
-            lanternContainer.appendChild(lantern);
+            lantern.style.left = Math.random() * 95 + 'vw';
+            lantern.style.animationDuration = (Math.random() * 8 + 10) + 's';
+            lantern.style.animationDelay = (Math.random() * 4) + 's';
+            frag.appendChild(lantern);
         }
+        lanternContainer.appendChild(frag);
+    }
+
+    // --- 10. Restart Journey Logic ---
+    const restartBtn = document.getElementById('restart-btn');
+    if (restartBtn) {
+        restartBtn.addEventListener('click', () => {
+            // Fade out body for smooth transition, then reload
+            document.body.style.transition = "opacity 1s ease";
+            document.body.style.opacity = "0";
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        });
     }
 });
