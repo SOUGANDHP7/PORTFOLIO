@@ -401,65 +401,61 @@ html, body {
 }
 
 /* Video Section */
-.video-section {
-    width: 100%;
-    margin-bottom: 40px;
+/* CINEMATIC VIDEO BACKGROUND */
+.cinematic-video-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1; /* Below content but above global background */
+    pointer-events: none; /* Let clicks pass through to page content */
+    opacity: 0; /* Fade in when Page 2 opens */
+    transition: opacity 1.5s ease-in-out;
 }
-.video-wrapper {
-    width: 100%;
-    border-radius: 20px;
-    overflow: hidden;
-    padding: 10px;
-    box-shadow: 0 0 30px rgba(255, 94, 142, 0.3),
-                0 0 60px rgba(255, 94, 142, 0.1),
-                inset 0 0 30px rgba(255, 94, 142, 0.05);
-    border: 1px solid rgba(255, 94, 142, 0.3);
-    position: relative;
+.cinematic-video-bg.active {
+    opacity: 1;
 }
-.video-wrapper video {
+.cinematic-video-bg video {
     width: 100%;
-    height: auto;
-    max-height: 60vh;
-    border-radius: 12px;
-    outline: none;
-    display: block;
-    object-fit: contain;
-    background: #000;
+    height: 100%;
+    object-fit: cover; /* Responsive full screen */
+    filter: brightness(0.65) contrast(1.1) saturate(1.1); /* Dark romantic color grading */
+    transform: scale(1.02); /* Slight scale to hide edges */
 }
-.video-loading-overlay {
+.cinematic-video-overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(to bottom, rgba(15, 8, 15, 0.5) 0%, rgba(15, 8, 15, 0.95) 100%);
+    box-shadow: inset 0 0 150px rgba(255, 94, 142, 0.15); /* Neon glow edges */
+    backdrop-filter: blur(3px); /* Soft cinematic blur */
+    -webkit-backdrop-filter: blur(3px);
+}
+
+/* CINEMATIC HERO TEXT */
+.cinematic-hero-text {
+    height: 100vh;
     display: flex;
-    align-items: center;
+    flex-direction: column;
     justify-content: center;
-    background: rgba(8,6,12,0.8);
-    border-radius: 20px;
-    z-index: 5;
-    pointer-events: none;
-    transition: opacity 0.5s ease;
-}
-.video-loading-overlay.loaded {
-    opacity: 0;
-    pointer-events: none;
-}
-.video-spinner {
-    width: 50px;
-    height: 50px;
-    border: 3px solid rgba(255,94,142,0.2);
-    border-top-color: var(--accent-primary);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.video-caption {
-    padding: 20px;
+    align-items: center;
     text-align: center;
+    padding: 20px;
+    position: relative;
+    z-index: 10;
+    text-shadow: 0 0 30px rgba(0, 0, 0, 0.8), 0 0 10px rgba(255, 94, 142, 0.6);
 }
-.video-caption h3 {
+.cinematic-hero-text h3 {
     font-family: 'Playfair Display', serif;
-    color: var(--accent-primary);
-    font-size: 1.8rem;
-    margin-bottom: 10px;
+    font-size: 3.5rem;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
+.cinematic-hero-text p {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.5rem;
+    color: rgba(255, 255, 255, 0.9);
 }
 
 /* Memory Grid - Compact 2 Column Layout */
@@ -759,26 +755,25 @@ html, body {
         </div>
     </div>
 
+    <!-- CINEMATIC BACKGROUND VIDEO FOR PAGE 2 -->
+    <div class="cinematic-video-bg" id="page-2-bg">
+        <video id="anime-video" autoplay muted loop playsinline preload="auto">
+            <source src="assets/videos/gemini_generated_video_481A540E.mp4" type="video/mp4">
+        </video>
+        <div class="cinematic-video-overlay"></div>
+    </div>
+
     <!-- PAGE 2: SHORT CINEMATIC STORY PAGE (SCROLLABLE) -->
     <div id="page-2" class="page hidden scrollable">
         <div class="page-2-container">
             
-            <!-- Video Section -->
-            <div class="video-section gs-reveal">
-                <div class="video-wrapper glass-card">
-                    <video id="anime-video" controls muted loop playsinline preload="auto"
-                           style="width:100%;height:auto;max-height:60vh;display:block;border-radius:12px;background:#000;">
-                        <source src="./assets/videos/gemini_generated_video_481A540E.mp4" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                    <div class="video-caption">
-                        <h3>Through Every Storm</h3>
-                        <p>We fight, we fix it, and we grow stronger...</p>
-                    </div>
-                </div>
+            <!-- Cinematic Hero Text -->
+            <div class="cinematic-hero-text gs-reveal">
+                <h3>Through Every Storm</h3>
+                <p>We fight, we fix it, and we grow stronger...</p>
             </div>
 
-            <h2 class="section-title fade-in-up mt-80">Our Memories</h2>
+            <h2 class="section-title fade-in-up" style="margin-top: 50px;">Our Memories</h2>
             <!-- Compact Horizontal Memory Grid -->
             <div class="memory-grid">
                 <div class="glass-card memory-card gs-reveal">
@@ -1045,7 +1040,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const toPage = pages[to];
 
         // Pause video if leaving page2
-        if (from === 'page2' && animeVideo) animeVideo.pause();
+        if (from === 'page2' && animeVideo) {
+            animeVideo.pause();
+            document.getElementById('page-2-bg').classList.remove('active');
+        }
 
         fromPage.classList.add('hidden', animation);
         fromPage.classList.remove('active');
@@ -1058,6 +1056,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Resume video when entering page2
             if (to === 'page2' && animeVideo) {
                 animeVideo.play().catch(() => {});
+                document.getElementById('page-2-bg').classList.add('active');
             }
             if (to === 'page2') {
                 ScrollTrigger.refresh();
