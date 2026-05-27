@@ -760,10 +760,7 @@ html, body {
             <!-- Video Section -->
             <div class="video-section gs-reveal">
                 <div class="video-wrapper glass-card">
-                    <div class="video-loading-overlay" id="video-loader">
-                        <div class="video-spinner"></div>
-                    </div>
-                    <video id="anime-video" controls muted loop playsinline preload="metadata"
+                    <video id="anime-video" controls muted loop playsinline preload="auto"
                            style="width:100%;height:auto;max-height:60vh;display:block;border-radius:12px;background:#000;">
                         <source src="./assets/videos/gemini_generated_video_481A540E.mp4" type="video/mp4">
                         Your browser does not support the video tag.
@@ -978,31 +975,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 1b. Video Setup ---
     const animeVideo = document.getElementById('anime-video');
-    const videoLoader = document.getElementById('video-loader');
-
-    function hideVideoLoader() {
-        if (videoLoader) videoLoader.classList.add('loaded');
-    }
-
-    if (animeVideo) {
-        // Hide loader once video can play
-        animeVideo.addEventListener('canplay', hideVideoLoader);
-        animeVideo.addEventListener('loadeddata', hideVideoLoader);
-        // Attempt autoplay when video is ready
-        animeVideo.addEventListener('canplaythrough', () => {
-            hideVideoLoader();
-            animeVideo.play().catch(() => {
-                // Autoplay blocked — video will play on user interaction
-            });
-        });
-        // Handle video error
-        animeVideo.addEventListener('error', () => {
-            hideVideoLoader();
-            console.warn('Video failed to load. Check file path and format.');
-        });
-        // Force load
-        animeVideo.load();
-    }
 
     // --- 1c. Image Lazy-load Fade-in ---
     // Images with loading="lazy" will already have onload handlers in HTML
