@@ -471,14 +471,14 @@ html, body {
     height: 100%;
     object-fit: cover;
     object-position: center;
-    transition: transform 0.6s ease, opacity 0.4s ease;
-    opacity: 0;
+    transition: transform 0.6s ease;
     position: relative;
     z-index: 1;
     display: block;
+    /* Removed opacity: 0 to prevent images from never appearing */
 }
 .img-container img.loaded {
-    opacity: 1;
+    /* No opacity change needed */
 }
 .img-container img.error {
     opacity: 0.3;
@@ -674,8 +674,8 @@ html, body {
     <!-- Music Controls -->
     <button id="music-toggle" class="music-toggle">🎵</button>
     <audio id="bg-music" loop preload="none">
-        <source src="assets/music/piano_melody.mp3" type="audio/mpeg">
-        <source src="assets/music/piano_melody.ogg" type="audio/ogg">
+        <source src="./assets/music/piano_melody.mp3" type="audio/mpeg">
+        <source src="./assets/music/piano_melody.ogg" type="audio/ogg">
     </audio>
 
     <!-- Modal: Love Letter -->
@@ -719,7 +719,7 @@ html, body {
                     </div>
                     <video id="anime-video" controls muted loop playsinline preload="metadata"
                            style="width:100%;height:auto;max-height:60vh;display:block;border-radius:12px;background:#000;">
-                        <source src="assets/video/gemini_generated_video_481A540E.mp4" type="video/mp4">
+                        <source src="./assets/videos/gemini_generated_video_481A540E.mp4" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                     <div class="video-caption">
@@ -734,7 +734,7 @@ html, body {
             <div class="memory-grid">
                 <div class="glass-card memory-card gs-reveal">
                     <div class="img-container">
-                        <img src="assets/images/memory1.jpg" alt="The First Glance" loading="lazy"
+                        <img src="./assets/images/memory1.jpg" alt="The First Glance" loading="lazy"
                              onload="this.classList.add('loaded')" onerror="this.classList.add('error');this.src='';this.alt='💕 Memory'">
                     </div>
                     <div class="memory-text">
@@ -744,7 +744,7 @@ html, body {
                 </div>
                 <div class="glass-card memory-card gs-reveal">
                     <div class="img-container">
-                        <img src="assets/images/memory2.jpg" alt="The First Promise" loading="lazy"
+                        <img src="./assets/images/memory2.jpg" alt="The First Promise" loading="lazy"
                              onload="this.classList.add('loaded')" onerror="this.classList.add('error');this.src='';this.alt='💕 Memory'">
                     </div>
                     <div class="memory-text">
@@ -754,7 +754,7 @@ html, body {
                 </div>
                 <div class="glass-card memory-card gs-reveal">
                     <div class="img-container">
-                        <img src="assets/images/memory3.jpg" alt="You &amp; Me" loading="lazy"
+                        <img src="./assets/images/memory3.jpg" alt="You &amp; Me" loading="lazy"
                              onload="this.classList.add('loaded')" onerror="this.classList.add('error');this.src='';this.alt='💕 Memory'">
                     </div>
                     <div class="memory-text">
@@ -764,7 +764,7 @@ html, body {
                 </div>
                 <div class="glass-card memory-card gs-reveal">
                     <div class="img-container">
-                        <img src="assets/images/memory4.jpg" alt="Every Little Thing" loading="lazy"
+                        <img src="./assets/images/memory4.jpg" alt="Every Little Thing" loading="lazy"
                              onload="this.classList.add('loaded')" onerror="this.classList.add('error');this.src='';this.alt='💕 Memory'">
                     </div>
                     <div class="memory-text">
@@ -774,7 +774,7 @@ html, body {
                 </div>
                 <div class="glass-card memory-card gs-reveal">
                     <div class="img-container">
-                        <img src="assets/images/memory5.png" alt="Forever" loading="lazy"
+                        <img src="./assets/images/memory5.png" alt="Forever" loading="lazy"
                              onload="this.classList.add('loaded')" onerror="this.classList.add('error');this.src='';this.alt='💕 Memory'">
                     </div>
                     <div class="memory-text">
@@ -784,7 +784,7 @@ html, body {
                 </div>
                 <div class="glass-card memory-card gs-reveal">
                     <div class="img-container">
-                        <img src="assets/images/memory6.jpg" alt="Soul Connection" loading="lazy"
+                        <img src="./assets/images/memory6.jpg" alt="Soul Connection" loading="lazy"
                              onload="this.classList.add('loaded')" onerror="this.classList.add('error');this.src='';this.alt='💕 Memory'">
                     </div>
                     <div class="memory-text">
