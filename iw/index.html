@@ -704,6 +704,57 @@ html, body {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.15s !important; }
 }
 
+/* Password Overlay */
+.password-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.5s ease;
+}
+.password-overlay.unlocked {
+    opacity: 0;
+    pointer-events: none;
+}
+.password-card {
+    padding: 40px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    max-width: 400px;
+    width: 90%;
+}
+.password-card h2 { font-family: 'Playfair Display', serif; font-size: 2.5rem; color: var(--accent-primary); }
+.password-card p { font-size: 1.1rem; color: var(--text-secondary); }
+.password-card input {
+    padding: 15px;
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255,255,255,0.1);
+    color: white;
+    font-size: 1.2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+.password-card input:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 10px rgba(255, 94, 142, 0.5); }
+.password-error { color: #ff3333; font-size: 1rem; margin-top: -10px; transition: opacity 0.3s; }
+.password-error.hidden { opacity: 0; pointer-events: none; }
+.shake { animation: shake 0.5s; border-color: #ff3333 !important; }
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    50% { transform: translateX(10px); }
+    75% { transform: translateX(-10px); }
+}
+
 </style>
     <!-- GSAP for Smooth Animations -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -712,6 +763,17 @@ html, body {
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
+    <!-- Password Lock Overlay -->
+    <div id="password-overlay" class="password-overlay">
+        <div class="glass-card password-card">
+            <h2>Protected</h2>
+            <p>Please enter the password to view this page.</p>
+            <input type="password" id="site-password" placeholder="Enter password" autocomplete="off" />
+            <button id="unlock-btn" class="glow-button">Unlock</button>
+            <p id="password-error" class="password-error hidden">Incorrect password. Try again.</p>
+        </div>
+    </div>
+    
     <!-- Backgrounds (Persistent across pages) -->
     <div class="aurora-bg"></div>
     <div class="stars"></div>
@@ -1423,6 +1485,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.reload();
             }, 1000);
         });
+    }
+
+    // --- 11. Password Protection Logic ---
+    const passwordOverlay = document.getElementById('password-overlay');
+    const passwordInput = document.getElementById('site-password');
+    const unlockBtn = document.getElementById('unlock-btn');
+    const passwordError = document.getElementById('password-error');
+    
+    // Default password is "0808" (Can be changed here)
+    const CORRECT_PASSWORD = "0808";
+
+    const checkPassword = () => {
+        if (passwordInput.value === CORRECT_PASSWORD) {
+            passwordOverlay.classList.add('unlocked');
+            setTimeout(() => {
+                passwordOverlay.style.display = 'none';
+            }, 500); // Wait for fade out
+        } else {
+            passwordError.classList.remove('hidden');
+            passwordInput.classList.add('shake');
+            setTimeout(() => passwordInput.classList.remove('shake'), 500);
+            passwordInput.value = '';
+            passwordInput.focus();
+        }
+    };
+
+    if (unlockBtn && passwordInput) {
+        unlockBtn.addEventListener('click', checkPassword);
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkPassword();
+        });
+        
+        // Focus input on load
+        setTimeout(() => passwordInput.focus(), 100);
     }
 });
 
