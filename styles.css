@@ -283,7 +283,8 @@ section {
 .hero-cta {
   margin-top: 50px;
   display: flex;
-  gap: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
 /* About Section */
@@ -595,5 +596,16 @@ footer {
 
   .section-heading .line {
     width: 100%;
+  }
+
+  .hero-cta {
+    flex-direction: column;
+    width: 100%;
+    align-items: stretch;
+  }
+  
+  .hero-cta .btn {
+    width: 100%;
+    text-align: center;
   }
 }
