@@ -43,47 +43,111 @@ window.addEventListener('scroll', () => {
     lastScrollY = window.scrollY;
 });
 
-// Contact Form Handling
+// Contact Form Handling with EmailJS
 const form = document.getElementById('contact-form');
 const statusDiv = document.getElementById('form-status');
+const fallbackContact = document.getElementById('fallback-contact');
+
+// EmailJS Keys
+const EMAILJS_PUBLIC_KEY = "soNWhsjxG9bVPDHaZ";
+const EMAILJS_SERVICE_ID = "service_0tanorr";
+const EMAILJS_TEMPLATE_ID = "template_mpx3acx";
+
+// Initialize EmailJS
+if (typeof emailjs !== 'undefined') {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+} else {
+    console.error("EmailJS SDK failed to load. Please check your internet connection or ad blocker.");
+}
+
+const validateEmail = (email) => {
+    return String(email)
+        .toLowerCase()
+        .match(
+            /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+        );
+};
 
 form.addEventListener('submit', (e) => {
     e.preventDefault();
+    
+    // Hide fallback initially
+    fallbackContact.style.display = 'none';
+    
+    // Validation
+    const name = form.name.value.trim();
+    const email = form.email.value.trim();
+    const subject = form.subject ? form.subject.value.trim() : '';
+    const message = form.message.value.trim();
+    
+    if (!name || !email || !subject || !message) {
+        statusDiv.style.color = '#ff6b6b';
+        statusDiv.textContent = 'Please fill out all required fields.';
+        return;
+    }
+    
+    if (!validateEmail(email)) {
+        statusDiv.style.color = '#ff6b6b';
+        statusDiv.textContent = 'Please enter a valid email address.';
+        return;
+    }
+
     const btn = form.querySelector('.submit-btn');
     const originalText = btn.textContent;
+    
+    // UI Loading State
     btn.textContent = 'Sending...';
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
+    btn.style.cursor = 'not-allowed';
+    statusDiv.textContent = '';
 
-    const formData = new FormData(form);
+    // Date formatting for the template
+    const currentDate = new Date().toLocaleString();
 
-    // Using FormSubmit API to actually send the email without needing a backend
-    fetch('https://formsubmit.co/ajax/isreeharim@gmail.com', {
-        method: "POST",
-        body: formData,
-        headers: {
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        btn.textContent = originalText;
-        if (data.success) {
+    const templateParams = {
+        name: name,
+        email: email,
+        subject: subject,
+        message: message,
+        current_date: currentDate
+    };
+
+    console.log("Attempting to send email via EmailJS...");
+    console.log("Template Parameters:", templateParams);
+
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+        .then(function(response) {
+            console.log('SUCCESS!', response.status, response.text);
+            
+            // Reset UI
+            btn.textContent = originalText;
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            
             statusDiv.style.color = 'var(--accent)';
-            statusDiv.textContent = 'Awesome! Your message has been sent successfully.';
+            statusDiv.textContent = "Your message has been sent successfully. I'll get back to you soon.";
             form.reset();
-        } else {
+            
+            setTimeout(() => {
+                statusDiv.textContent = '';
+            }, 8000);
+        }, function(error) {
+            console.error('FAILED...', error);
+            
+            // Reset UI
+            btn.textContent = originalText;
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            
             statusDiv.style.color = '#ff6b6b';
-            statusDiv.textContent = 'Oops! Something went wrong.';
-        }
-        setTimeout(() => {
-            statusDiv.textContent = '';
-        }, 5000);
-    })
-    .catch(error => {
-        btn.textContent = originalText;
-        statusDiv.style.color = '#ff6b6b';
-        statusDiv.textContent = 'Oops! There was a network error.';
-        setTimeout(() => {
-            statusDiv.textContent = '';
-        }, 5000);
-    });
+            statusDiv.textContent = "Message failed to send. Please try again later.";
+            fallbackContact.style.display = 'block'; // Show fallback
+            
+            setTimeout(() => {
+                statusDiv.textContent = '';
+            }, 8000);
+        });
 });

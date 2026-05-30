@@ -7,6 +7,7 @@
     <title>SOUGANDH.P- Developer Portfolio</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="script.js" defer></script>
 </head>
 <body>
@@ -181,7 +182,7 @@ const developer = {
                 <h3 class="contact-heading">Get In Touch</h3>
                 <p>I'm currently looking for any new opportunities, my inbox is always open. Whether you have a question or just want to say hi, I'll try my best to get back to you!</p>
                 
-                <form id="contact-form" class="contact-form">
+                <form id="contact-form" class="contact-form" novalidate>
                     <div class="form-group">
                         <label for="name">Name</label>
                         <input type="text" id="name" name="name" required placeholder="John Doe">
@@ -191,11 +192,22 @@ const developer = {
                         <input type="email" id="email" name="email" required placeholder="john@example.com">
                     </div>
                     <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" name="subject" required placeholder="Project Inquiry">
+                    </div>
+                    <div class="form-group">
                         <label for="message">Message</label>
                         <textarea id="message" name="message" required rows="5" placeholder="Hello..."></textarea>
                     </div>
                     <button type="submit" class="btn btn-primary submit-btn">Say Hello</button>
                     <div id="form-status" class="form-status"></div>
+                    
+                    <div id="fallback-contact" style="display: none; margin-top: 20px; text-align: center; font-size: 0.9rem; color: var(--text-secondary);">
+                        <p>Having trouble with the form?</p>
+                        <a href="mailto:sougandhputhuvayisougandh@gmail.com" style="color: var(--accent); text-decoration: underline;">
+                            Email me directly at sougandhputhuvayisougandh@gmail.com
+                        </a>
+                    </div>
                 </form>
             </div>
         </section>
